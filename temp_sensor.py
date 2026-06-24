@@ -64,6 +64,12 @@ class MAX6675:
         raw = self._read_raw()
         self._last_read_ms = time.ticks_ms()
 
+        # Check for communication failure (all zeros)
+        if raw == 0x0000:
+            print("[DEBUG] MAX6675: SPI communication failure (raw=0x0000)")
+            self._fault = True
+            raise RuntimeError("MAX6675: SPI communication failure or no thermocouple attached")
+
         if raw & 0x0004:
             self._fault = True
             raise RuntimeError("MAX6675: thermocouple open-circuit")
@@ -83,8 +89,15 @@ class MAX6675:
     def _read_raw(self):
         buf = bytearray(2)
         self._cs.value(0)
-        time.sleep_us(1)
+        time.sleep_us(10)  # Increase delay before read
         self._spi.readinto(buf)
-        time.sleep_us(1)
+        time.sleep_us(10)  # Increase delay after read
         self._cs.value(1)
-        return (buf[0] << 8) | buf[1]
+        time.sleep_us(100)  # Allow settling time between reads
+        
+        raw = (buf[0] << 8) | buf[1]
+        
+        # Debug: print raw bytes to diagnose
+        print("[DEBUG] MAX6675 raw value: 0x{:04x} (bytes: 0x{:02x} 0x{:02x})".format(raw, buf[0], buf[1]))
+        
+        return raw
