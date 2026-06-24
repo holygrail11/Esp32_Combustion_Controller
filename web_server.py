@@ -312,13 +312,18 @@ class WebServer:
         self.wlan.active(True)
         self.wlan.connect(self.ssid, self.password)
 
-        timeout = 20
+        timeout = 30  # Increased from 20 to 30 seconds
         while timeout > 0 and not self.wlan.isconnected():
+            print("[WebServer] Attempting to connect... ({} seconds left)".format(timeout))
             time.sleep(0.5)
             timeout -= 1
 
         if not self.wlan.isconnected():
+            print("[WebServer] Failed to connect to WiFi: {}".format(self.ssid))
+            print("[WebServer] Check your SSID and password in secrets.py or main.py")
             raise RuntimeError("Failed to connect to WiFi")
+        
+        print("[WebServer] WiFi connected!")
 
     def _start_http_server(self):
         """Start the HTTP server."""
